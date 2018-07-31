@@ -4,3 +4,6 @@
 2. $ cd myHexDump/ or cd myHexEdit/
 3. $ make
 4. $ cd ../out #your executable hexDump or hexEdit will at here
+
+# License
+MIT
