@@ -39,7 +39,7 @@ int write_n_bytes(int fp, void *buf, int num_bytes, int offset)
 	/** WRITE BYTES */
 	if (write(fp, buf, num_bytes))
 	{
-		perror("Read error");
+		perror("Write error");
 		return -1;
 	}
 
