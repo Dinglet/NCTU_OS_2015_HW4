@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 		exit(-1);
 	}
 	
-	start = atoi(argv[2]);
+	start = strtoul(argv[2],NULL,0);
 	size = argc - 3;
 	
 	buffer = (unsigned char*) malloc(size);
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	
 	/** OPEN the looper or images using System API */
 	/** REMIND: you will need O_NONBLOCK as flag */
-	if ((fp = /*add your code here*/) == -1)
+	if ((fp = open(argv[1], O_WRONLY|O_NONBLOCK)) == -1)
 	{
 		perror("Error opening image");
 		free(buffer);
@@ -47,6 +47,8 @@ int main(int argc, char **argv)
 		free(buffer);
 		exit(-1);
 	}
+	
+	close(fp);
 	
 	free(buffer);
 	
