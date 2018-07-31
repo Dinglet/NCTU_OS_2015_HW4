@@ -18,10 +18,9 @@ int main(int argc, char **argv)
 		perror("Usage: ./myHexDump IMAGE START OFFSET");
 	}
 	
-	start = atoi(argv[2]) & 0xFFFFFFF0;
-	end = atoi(argv[2])+atoi(argv[3]);
-	end = ((end&0x0F)==0x0F)?end:(end | 0x0F);
-	size = end - start + 1;
+	start = strtoul(argv[2],NULL,0); // byte offset
+	end = strtoul(argv[2],NULL,0)+strtoul(argv[3],NULL,0);
+	size = end - start;
 	
 	buffer = (unsigned char*) malloc(size);
 	if(buffer == NULL) 
@@ -32,7 +31,8 @@ int main(int argc, char **argv)
 	
 	/** OPEN the looper or images using System API */
 	/** REMIND: you will need O_NONBLOCK as flag */
-	if ((fp = /*add your code here*/) == -1)
+		/** why??? */
+	if ((fp = open(argv[1], O_RDONLY|O_NONBLOCK)) == -1)
 	{
 		perror("Error opening image");
 		free(buffer);
@@ -47,6 +47,8 @@ int main(int argc, char **argv)
 	}
 	
 	hexDump(buffer, size, start);
+	
+	close(fp);
 	
 	free(buffer);
 	
