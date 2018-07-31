@@ -7,19 +7,18 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include <common.h>
-
+#include "common.h"
 int read_n_bytes(int fp, void *dest, int num_bytes, int offset)
 {
 	/** OFFSET FROM BEGINING OF PARTITION WHERE THE INFO RESIDES */ 
-	if (/*add your code here*/)
+	if (lseek(fp,offset,SEEK_SET)==-1)
 	{
 		perror("Seek error");
 		return -1;
 	}
 	
 	/** READ BYTES */
-	if (/*add your code here*/)
+	if (read(fp,dest,num_bytes)==-1)
 	{
 		perror("Read error");
 		return -1;
@@ -31,14 +30,14 @@ int read_n_bytes(int fp, void *dest, int num_bytes, int offset)
 int write_n_bytes(int fp, void *buf, int num_bytes, int offset) 
 {
 	/** OFFSET FROM BEGINING OF PARTITION WHERE THE INFO RESIDES */ 
-	if (/*add your code here*/)
+	if (lseek(fp,offset,SEEK_SET)==-1)
 	{
 		perror("Seek error");
 		return -1;
 	}
 
 	/** WRITE BYTES */
-	if (/*add your code here*/)
+	if (write(fp, buf, num_bytes))
 	{
 		perror("Read error");
 		return -1;
@@ -50,7 +49,6 @@ int write_n_bytes(int fp, void *buf, int num_bytes, int offset)
 void hexDump(void *source, int size, int start_offset) 
 {
 	int i,j;
-	int start = 0 + start_offset;
 	
 	unsigned char *checker = (unsigned char*)malloc(size);
 	memcpy(checker, source, size);
@@ -58,12 +56,16 @@ void hexDump(void *source, int size, int start_offset)
 	/************
 	 *  HEADER  *
 	 ************/
-	printf("address\t");
-	for(i=0; i<16; i++) 
-		printf("%2X ", i);
-	printf(" ");
-	for(i=0; i<16; i++) 
-		printf("%X", i);
+	int first_col=start_offset & 0xF;
+	printf("address   ");
+	for(i=first_col; i<first_col+16; i++)
+	{
+		printf("%2x ", i & 0xF);
+		if(((i-first_col)&0xF) == 7) printf(" ");
+	}
+	printf("  ");
+	for(i=first_col; i<first_col+16; i++) 
+		printf("%x", i & 0xF);
 	printf("\n");
 	
 	for(i=0; i<size; i++) 
@@ -71,15 +73,15 @@ void hexDump(void *source, int size, int start_offset)
 		/********
 		 * DATA *
 		 ********/
-		if(i % 16 == 0) printf("%07x\t", start+i);
+		if((i&0xF)==0) printf("%08x  ", start_offset+i);
 		printf("%02x ", checker[i]);
-		
+		if((i&0xF) == 7) printf(" ");
 		/********************
 		 * REFERENCE VALUES *
 		 ********************/
-		if((i+1)% 16 == 0) 
+		if((i&0xF) == 15) 
 		{
-			printf("|");
+			printf(" |");
 			for(j=i-15; j<=i; j++) 
 			{
 				if(checker[j] >= 0x20 && checker[j] <= 0x7E)
@@ -90,12 +92,27 @@ void hexDump(void *source, int size, int start_offset)
 			printf("|\n");
 		}
 	}
-	
-	printf("\n");
+	if((i&0xF))
+	{
+		for(j=0;j<3*((16-i)&0xF);j++)
+		{
+			printf(" ");
+		}
+		if((i&0xF)<8) printf(" ");
+		printf(" |");
+		for(j=(i&0xFFFFFFF0); j<i; j++) 
+		{
+			if(checker[j] >= 0x20 && checker[j] <= 0x7E)
+				printf("%c", checker[j]);
+			else 
+				printf(".");
+		}
+		printf("|\n");
+	}
+	printf("%08x\n", start_offset+i);
 	
 	free(checker);
 }
-
 
 void atoi_array(unsigned char *dest, char **src, int size) 
 {
