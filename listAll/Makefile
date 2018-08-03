@@ -8,6 +8,7 @@ CFLAGS += -g
 
 OUTPUT = listAll
 OBJ	=	common \
+	fat32 \
 	listAll
 
 $(OUTPUT): $(addsuffix .o, $(OBJ))
