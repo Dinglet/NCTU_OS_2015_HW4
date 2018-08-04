@@ -16,6 +16,7 @@ int main(int argc, char **argv)
 	if(argc != 4)
 	{
 		perror("Usage: ./myHexDump IMAGE START OFFSET");
+		exit(EXIT_FAILURE);
 	}
 	
 	start = strtoul(argv[2],NULL,0); // byte offset
@@ -26,7 +27,7 @@ int main(int argc, char **argv)
 	if(buffer == NULL) 
 	{
 		perror("Error allocating memory");
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	
 	/** OPEN the looper or images using System API */
@@ -36,14 +37,14 @@ int main(int argc, char **argv)
 	{
 		perror("Error opening image");
 		free(buffer);
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	
 	if(read_n_bytes(fp, buffer, size, start) == -1)
 	{
 		perror("Error reading image");
 		free(buffer);
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	
 	hexDump(buffer, size, start);

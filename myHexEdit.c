@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 	if(argc < 4)
 	{
 		perror("Usage: ./myHexEdit IMAGE START HEX_VALUE1 [HEX_VALUE2 ..]");
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	
 	start = strtoul(argv[2],NULL,0);
@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 	if(buffer == NULL) 
 	{
 		perror("Error allocating memory");
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	
 	/** OPEN the looper or images using System API */
@@ -36,7 +36,7 @@ int main(int argc, char **argv)
 	{
 		perror("Error opening image");
 		free(buffer);
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	
 	atoi_array(buffer, argv+3, size);
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 	{
 		perror("Error writing image");
 		free(buffer);
-		exit(-1);
+		exit(EXIT_FAILURE);
 	}
 	
 	close(fp);
