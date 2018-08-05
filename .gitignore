@@ -58,4 +58,5 @@ dkms.conf
 !.vscode/launch.json
 !.vscode/extensions.json
 
+obj/
 out/
