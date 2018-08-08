@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 	
 	atoi_array(buffer, argv+3, size);
 	
-	if(write_n_bytes(fp, buffer, size, start) == -1)
+	if(write_n_bytes(fp, buffer, start, size) == -1)
 	{
 		perror("Error writing image");
 		free(buffer);

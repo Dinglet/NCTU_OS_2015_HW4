@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	
-	if(read_n_bytes(fp, buffer, size, start) == -1)
+	if(read_n_bytes(fp, buffer, start, size) == -1)
 	{
 		perror("Error reading image");
 		free(buffer);
