@@ -120,8 +120,7 @@ typedef union fat_direntry
 typedef struct fat_s {
     int file_descriptor;
     fat_BS_t *bs;
-    void *offset_fat_region;
-    void *offset_data_region;
+    uint32_t offset_fat_region, offset_data_region;
     uint32_t bytes_per_cluster;
     uint32_t dir_tables_in_cluster;
     // fat_fsinfo_t *info;
