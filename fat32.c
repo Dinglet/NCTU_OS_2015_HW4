@@ -180,16 +180,6 @@ inline int fat_file_is_directory(fat_file_t *p_file)
 inline int fat_file_is_dot_entry(fat_file_t *p_file)
 {
     return *((uint8_t*)&p_file->dir_ent) == 0x2E;
-    // const char *basename = p_file->basename;
-    // if(basename[0]=='\0')
-    //     return -1; // Invalid name
-    // if(basename[0]=='.') // .*
-    //     if(basename[1]=='\0') // .
-    //         return 1;
-    //     if(basename[1]=='.') // ..*
-    //         if(basename[2]=='\0') // ..
-    //             return 1;
-    // return 0;
 }
 
 inline int fat_file_is_file(fat_file_t *p_file)
