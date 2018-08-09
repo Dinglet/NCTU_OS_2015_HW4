@@ -8,7 +8,7 @@
 #include <fcntl.h>
 
 #include "common.h"
-int read_n_bytes(int fp, void *dest, int num_bytes, int offset)
+int read_n_bytes(int fp, void *dest, int offset, int num_bytes)
 {
 	/** OFFSET FROM BEGINING OF PARTITION WHERE THE INFO RESIDES */ 
 	if (lseek(fp,offset,SEEK_SET)==-1)
@@ -27,7 +27,7 @@ int read_n_bytes(int fp, void *dest, int num_bytes, int offset)
 	return 0;
 }
 
-int write_n_bytes(int fp, void *buf, int num_bytes, int offset) 
+int write_n_bytes(int fp, void *buf, int offset, int num_bytes) 
 {
 	/** OFFSET FROM BEGINING OF PARTITION WHERE THE INFO RESIDES */ 
 	if (lseek(fp,offset,SEEK_SET)==-1)

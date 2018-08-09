@@ -12,15 +12,15 @@ OBJ	=	common	\
 
 $(OUTPUT): $(addsuffix .o, $(OBJ))
 	mkdir -p ../out/
-	$(CC) -o ../out/$@ $^ $(CFLAGS)
+	$(CC) -o ../out/$@ $(addprefix ../obj/, $^) $(CFLAGS)
 
-%.o: ../%.c 
-	$(CC) -c -o $@ $< $(CFLAGS)
+%.o: ../%.c
+	mkdir -p ../obj/
+	$(CC) -c -o ../obj/$@ $< $(CFLAGS)
 	
 clean:
-	rm -f *.o
-	rm -f ../*.o
+	rm -r ../obj/
 	rm -r ../out/
 
 cleanobj:
-	rm *.o
+	rm -r ../obj/

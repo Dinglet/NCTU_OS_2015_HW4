@@ -6,9 +6,10 @@ CFLAGS = -lm -I../include/ -DPARTITION_START=2048*512 -Wall
 # gdb 
 CFLAGS += -g
 
-OUTPUT = myHexEdit
+OUTPUT = listAll
 OBJ	=	common \
-		myHexEdit
+	fat32 \
+	listAll
 
 $(OUTPUT): $(addsuffix .o, $(OBJ))
 	mkdir -p ../out/

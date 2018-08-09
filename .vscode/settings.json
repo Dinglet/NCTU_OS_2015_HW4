@@ -1,0 +1,15 @@
+{
+    "files.associations": {
+        "stdlib.h": "c",
+        "stdio.h": "c",
+        "initializer_list": "c",
+        "fat32.h": "c",
+        "cstdlib": "c",
+        "typeinfo": "c",
+        "common.h": "c",
+        "unistd.h": "c",
+        "stat.h": "c",
+        "wchar.h": "c",
+        "fcntl.h": "c"
+    }
+}
