@@ -7,6 +7,9 @@
         "cstdlib": "c",
         "typeinfo": "c",
         "common.h": "c",
-        "unistd.h": "c"
+        "unistd.h": "c",
+        "stat.h": "c",
+        "wchar.h": "c",
+        "fcntl.h": "c"
     }
 }
