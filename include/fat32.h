@@ -123,6 +123,7 @@ typedef struct fat_s {
     void *offset_fat_region;
     void *offset_data_region;
     uint32_t bytes_per_cluster;
+    uint32_t dir_tables_in_cluster;
     // fat_fsinfo_t *info;
     // int fs_type;
     int data_sect;
@@ -131,24 +132,30 @@ typedef struct fat_s {
 
 typedef struct fat_file {
     char            *dirname, *basename;
-    fat_direntry_t  dir_ent;    
-    int             offset;
-    int             beg_marker;
-    int             eof_marker;
+    fat_direntry_t  dir_ent;
+    // int             offset;
+    // int             beg_marker;
+    // int             eof_marker;
 } fat_file_t;
 
 void fat32_init(fat_t *fat, const char *device_name);
 void fat32_teardown(fat_t *fat);
-uint32_t fat32_next_cluster(fat_t *p_fat, uint32_t cluster);
+uint32_t fat32_get_next_cluster(fat_t *p_fat, uint32_t cluster);
 int fat32_load_dir_table_and_return_true_if_end_of_chain(fat_direntry_t *p_dir_entry, fat_file_t *p_file);
-int fat32_end_of_cluster_chain(uint32_t cluster);
+int fat32_next_cluster_chain(fat_t *p_fat, uint32_t *p_cluster);
 uint8_t *fat32_alloc_and_load_cluster(fat_t *p_fat, uint32_t cluster);
 
 int fat_dir_entry_is_deleted(fat_direntry_t *p_dir_entry);
+int fat_dir_entry_is_empty(fat_direntry_t *p_dir_entry);
 
 void show_boot_record_info(fat_t *fat);
 void show_dir_entry_info(fat_direntry_t *p_dir_entry);
 
+void fat_file_init(fat_file_t *p_file);
 void fat_file_destruct(fat_file_t *p_file);
 int fat_file_is_directory(fat_file_t *p_file);
 int fat_file_is_dot_entry(fat_file_t *p_file);
+int fat_file_is_file(fat_file_t *p_file);
+uint32_t fat_file_get_cluster(fat_file_t *p_file);
+
+int strtrimcpy(char *dest, const char *src, int n);

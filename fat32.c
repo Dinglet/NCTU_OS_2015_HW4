@@ -2,12 +2,17 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
+#include <wchar.h>
+#include <locale.h>
 
 #include "fat32.h"
 #include "common.h"
 
 void fat32_init(fat_t *p_fat, const char *device_name)
 {
+    setlocale(LC_CTYPE, "");
+
     p_fat->file_descriptor = open(device_name, O_RDONLY|O_NONBLOCK);
     if (p_fat->file_descriptor == -1)
     {
@@ -27,6 +32,7 @@ void fat32_init(fat_t *p_fat, const char *device_name)
     p_fat->offset_fat_region = p_fat->bs->reserved_sector_count * p_fat->bs->bytes_per_sector;
     p_fat->offset_data_region = p_fat->offset_fat_region + p_fat->bs->table_count * ((fat_extBS_32_t*)p_fat->bs->extended_section)->table_size_32 * p_fat->bs->bytes_per_sector;
     p_fat->bytes_per_cluster = p_fat->bs->sectors_per_cluster * p_fat->bs->bytes_per_sector;
+    p_fat->dir_tables_in_cluster = p_fat->bs->bytes_per_sector * p_fat->bs->sectors_per_cluster / 32;
 
     return;
 }
@@ -37,40 +43,65 @@ void fat32_teardown(fat_t *p_fat)
     close(p_fat->file_descriptor);
 }
 
-uint32_t fat32_next_cluster(fat_t *p_fat, uint32_t cluster)
+uint32_t fat32_get_next_cluster(fat_t *p_fat, uint32_t cluster)
 {
-    return ((uint32_t*)p_fat->offset_fat_region)[cluster];
+    uint32_t next_cluster;
+    read_n_bytes(p_fat->file_descriptor, &next_cluster, ((uint32_t*)p_fat->offset_fat_region)+cluster, sizeof(next_cluster));
+    return next_cluster;
 }
 
 int fat32_load_dir_table_and_return_true_if_end_of_chain(fat_direntry_t *p_dir_entry, fat_file_t *p_file)
 {
-    char *string_merged;
     if(p_dir_entry->long_file_name.attributes == 0x0F)
     {
-        if(p_dir_entry->long_file_name.sequence_number.bits.first_physical_LFN_entry)
-            p_file->basename = (char*)calloc(1, sizeof(char));
-        
+        char *str_insert = (char*)calloc(13*4+1, sizeof(char)), *str_new;
+        wchar_t wstr_insert[14];
+        wstr_insert[0] = p_dir_entry->long_file_name.first_part_filename[0];
+        wstr_insert[1] = p_dir_entry->long_file_name.first_part_filename[1];
+        wstr_insert[2] = p_dir_entry->long_file_name.first_part_filename[2];
+        wstr_insert[3] = p_dir_entry->long_file_name.first_part_filename[3];
+        wstr_insert[4] = p_dir_entry->long_file_name.first_part_filename[4];
+        wstr_insert[5] = p_dir_entry->long_file_name.next_part_filename[0];
+        wstr_insert[6] = p_dir_entry->long_file_name.next_part_filename[1];
+        wstr_insert[7] = p_dir_entry->long_file_name.next_part_filename[2];
+        wstr_insert[8] = p_dir_entry->long_file_name.next_part_filename[3];
+        wstr_insert[9] = p_dir_entry->long_file_name.next_part_filename[4];
+        wstr_insert[10] = p_dir_entry->long_file_name.next_part_filename[5];
+        wstr_insert[11] = p_dir_entry->long_file_name.final_part_filename[0];
+        wstr_insert[12] = p_dir_entry->long_file_name.final_part_filename[1];
+        wstr_insert[13] = 0;
+        int len_insert = wcstombs(str_insert, &wstr_insert, 13*4);
+        str_new = realloc(p_file->basename, strlen(p_file->basename)+len_insert+1);
+
+        memmove(str_new+len_insert, str_new, strlen(str_new)+1);
+        memmove(str_new, str_insert, len_insert);
+        free(str_insert);
+        p_file->basename = str_new;
     }
     else
     {
-        if(p_file->basename[0])
+        if(p_file->basename[0] == '\0')
         {
             free(p_file->basename);
             p_file->basename = (char*) calloc(13, sizeof(char));
-            strncpy(p_file->basename, p_dir_entry->standard_8_3_format.filename, 8);
-            if(p_dir_entry->standard_8_3_format.filename[8])
-                strcat(p_file->basename, ".");
-            strncat(p_file->basename, p_dir_entry->standard_8_3_format.filename+8, 3);
+            char filename[9], ext[4];
+            int namelen = strtrimcpy(filename, p_dir_entry->standard_8_3_format.filename, 8);
+            int extlen = strtrimcpy(ext, &p_dir_entry->standard_8_3_format.filename[8], 3);
+            strcpy(p_file->basename, filename);
+            if(extlen > 0)
+                p_file->basename[namelen++] = '.';
+            strcpy(p_file->basename + namelen, ext);
         }
-
         p_file->dir_ent = *p_dir_entry;
     }
     return p_dir_entry->standard_8_3_format.attributes!=0x0F;
 }
 
-inline int fat32_end_of_cluster_chain(uint32_t cluster)
+inline int fat32_next_cluster_chain(fat_t *p_fat, uint32_t *p_cluster)
 {
-    return cluster&0xFFFFFFF8 != 0;
+    int flag_end_of_cluster = (*p_cluster&0x0FFFFFF8) == 0x0FFFFFF8;
+    *p_cluster = fat32_get_next_cluster(p_fat, *p_cluster);
+    return !flag_end_of_cluster;
 }
 
 uint8_t *fat32_alloc_and_load_cluster(fat_t *p_fat, uint32_t cluster)
@@ -84,6 +115,11 @@ uint8_t *fat32_alloc_and_load_cluster(fat_t *p_fat, uint32_t cluster)
 inline int fat_dir_entry_is_deleted(fat_direntry_t *p_dir_entry)
 {
     return *(uint8_t*)p_dir_entry == 0xE5;
+}
+
+inline int fat_dir_entry_is_empty(fat_direntry_t *p_dir_entry)
+{
+    return p_dir_entry->standard_8_3_format.attributes == 0x00;
 }
 
 void show_boot_record_info(fat_t *fat)
@@ -126,10 +162,14 @@ void show_dir_entry_info(fat_direntry_t *p_dir_entry)
     return;
 }
 
+void fat_file_init(fat_file_t *p_file)
+{
+    p_file->basename = (char*) calloc(1, sizeof(char));
+}
 
 inline void fat_file_destruct(fat_file_t *p_file)
 {
-    free(p_file->dirname);
+    // free(p_file->dirname);
     free(p_file->basename);
 }
 
@@ -151,4 +191,21 @@ inline int fat_file_is_dot_entry(fat_file_t *p_file)
     //         if(basename[2]=='\0') // ..
     //             return 1;
     // return 0;
+}
+
+inline int fat_file_is_file(fat_file_t *p_file)
+{
+    return p_file->dir_ent.standard_8_3_format.attributes!=0 && p_file->dir_ent.standard_8_3_format.attributes != 0x10;
+}
+
+uint32_t fat_file_get_cluster(fat_file_t *p_file)
+{
+    return (uint32_t)p_file->dir_ent.standard_8_3_format.high_cluster << 16 | p_file->dir_ent.standard_8_3_format.low_cluster;
+}
+
+int strtrimcpy(char *dest, const char *src, int n){
+	int len=0;
+	while(src[len] != ' ' && len<n && (dest[len] = src[len++] ));
+	dest[len]=0;
+	return len;
 }
