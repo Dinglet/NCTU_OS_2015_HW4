@@ -4,6 +4,7 @@ This is the homework 4 of Introduction to Operating System in the fall semester,
 What I had done were:
 * Write my own hexdump and hexedit tools
 * Aquire the knowledge of FAT32
+* List all files in file system (August 9, 2018)
 
 ## Overview and Purpose
 The aim of this assignment is to familiarize you with FAT32 file system, and to help you to understand underlying layout of that, you will need to implement your own hexdump and hexedit tools by using file system calls (such as open, read, write, lseek).
