@@ -18,7 +18,6 @@ void fat_listAll(fat_t *p_fat, fat_file_t *p_file);
 
 int main(int argc, char **argv) 
 {
-    int device_fd;
     const char *device_name;
     
     if(argc < 2)
@@ -71,7 +70,7 @@ void fat_listAll(fat_t *p_fat, fat_file_t *p_file)
     fat_file_init(&file_current);
     do
     {
-        buffer = fat32_alloc_and_load_cluster(p_fat, cluster);
+        buffer = (fat_direntry_t*)fat32_alloc_and_load_cluster(p_fat, cluster);
         for(i_dir_table=0; i_dir_table<p_fat->dir_tables_in_cluster; ++i_dir_table)
         {
             if(fat_dir_entry_is_deleted(buffer+i_dir_table))

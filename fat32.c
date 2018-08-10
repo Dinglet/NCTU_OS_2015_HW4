@@ -27,10 +27,9 @@ void fat32_init(fat_t *p_fat, const char *device_name)
 		exit(EXIT_FAILURE);
     }
     int table_size = (p_fat->bs->table_size_16 != 0) ? p_fat->bs->table_size_16 : ((fat_extBS_32_t*)p_fat->bs->extended_section)->table_size_32;
-    // fat.data_sect = fat.bs->reserved_sector_count + (fat.bs->table_count * table_size) + root_dir_sectors;
-
+    
     p_fat->offset_fat_region = p_fat->bs->reserved_sector_count * p_fat->bs->bytes_per_sector;
-    p_fat->offset_data_region = p_fat->offset_fat_region + p_fat->bs->table_count * ((fat_extBS_32_t*)p_fat->bs->extended_section)->table_size_32 * p_fat->bs->bytes_per_sector;
+    p_fat->offset_data_region = p_fat->offset_fat_region + p_fat->bs->table_count * table_size * p_fat->bs->bytes_per_sector;
     p_fat->bytes_per_cluster = p_fat->bs->sectors_per_cluster * p_fat->bs->bytes_per_sector;
     p_fat->dir_tables_in_cluster = p_fat->bs->bytes_per_sector * p_fat->bs->sectors_per_cluster / 32;
 
@@ -46,7 +45,7 @@ void fat32_teardown(fat_t *p_fat)
 uint32_t fat32_get_next_cluster(fat_t *p_fat, uint32_t cluster)
 {
     uint32_t next_cluster;
-    read_n_bytes(p_fat->file_descriptor, &next_cluster, ((uint32_t*)p_fat->offset_fat_region)+cluster, sizeof(next_cluster));
+    read_n_bytes(p_fat->file_descriptor, &next_cluster, p_fat->offset_fat_region+32*cluster, sizeof(uint32_t));
     return next_cluster;
 }
 
@@ -70,7 +69,7 @@ int fat32_load_dir_table_and_return_true_if_end_of_chain(fat_direntry_t *p_dir_e
         wstr_insert[11] = p_dir_entry->long_file_name.final_part_filename[0];
         wstr_insert[12] = p_dir_entry->long_file_name.final_part_filename[1];
         wstr_insert[13] = 0;
-        int len_insert = wcstombs(str_insert, &wstr_insert, 13*4);
+        int len_insert = wcstombs(str_insert, wstr_insert, 13*4);
         str_new = realloc(p_file->basename, strlen(p_file->basename)+len_insert+1);
 
         memmove(str_new+len_insert, str_new, strlen(str_new)+1);
@@ -85,8 +84,8 @@ int fat32_load_dir_table_and_return_true_if_end_of_chain(fat_direntry_t *p_dir_e
             free(p_file->basename);
             p_file->basename = (char*) calloc(13, sizeof(char));
             char filename[9], ext[4];
-            int namelen = strtrimcpy(filename, p_dir_entry->standard_8_3_format.filename, 8);
-            int extlen = strtrimcpy(ext, &p_dir_entry->standard_8_3_format.filename[8], 3);
+            int namelen = strtrimcpy(filename, (char*)p_dir_entry->standard_8_3_format.filename, 8);
+            int extlen = strtrimcpy(ext, ((char*)p_dir_entry->standard_8_3_format.filename)+8, 3);
             strcpy(p_file->basename, filename);
             if(extlen > 0)
                 p_file->basename[namelen++] = '.';
@@ -181,16 +180,6 @@ inline int fat_file_is_directory(fat_file_t *p_file)
 inline int fat_file_is_dot_entry(fat_file_t *p_file)
 {
     return *((uint8_t*)&p_file->dir_ent) == 0x2E;
-    // const char *basename = p_file->basename;
-    // if(basename[0]=='\0')
-    //     return -1; // Invalid name
-    // if(basename[0]=='.') // .*
-    //     if(basename[1]=='\0') // .
-    //         return 1;
-    //     if(basename[1]=='.') // ..*
-    //         if(basename[2]=='\0') // ..
-    //             return 1;
-    // return 0;
 }
 
 inline int fat_file_is_file(fat_file_t *p_file)
